@@ -1,0 +1,68 @@
+#!/bin/bash
+set -e
+
+usage() {
+	echo "degit-sync - push and pull changes from local git repos to remote machines without git"
+	echo "Usage: $0 [-n] push <target>" 1>&2
+	echo "       $0 [-n] pull <target>" 1>&2
+}
+
+
+# CLI parsing
+while getopts ":nh" opt; do
+	case $opt in
+		h)
+			usage
+			echo "Options:"
+			echo -e "\t <target> \t the remote location to sync with"
+			echo -e "\t -h \t\t print help"
+			echo -e "\t -n \t\t dry run"
+			exit 0
+			;;
+		n)
+			echo "dry run"
+			dryrun=" --dry-run"
+			;;
+		\?)
+			echo "Invalid option: -$OPTARG" >&2
+			usage
+			exit 1
+			;;
+	esac
+done
+
+ARG1=${@:OPTIND:1}
+ARG2=${@:OPTIND+1:1}
+
+# only push and pull commands are allowed
+if [[ ! $ARG1 =~ ^(push|pull)$ ]]
+then
+	usage
+	exit 1
+fi
+command=$ARG1
+if [[ -z $ARG2 ]]
+then
+	usage
+	exit 1
+fi
+target=$ARG2
+
+repo_root=$(git rev-parse --show-toplevel)
+
+if [ $command == "push" ]
+then
+	echo "Pushing repo under $repo_root to $target"
+	rsync -aP $repo_root/ "$target/" --exclude=".*" --exclude=/build/ --delete --stats $dryrun
+	exit 0
+fi
+
+if [ $command == "pull" ]
+then
+	echo "Pulling from  $target to $repo_root"
+	rsync -aP "$target/" $repo_root/ --exclude=".*" --exclude=/build/ --delete --stats $dryrun
+	exit 0
+fi
+
+usage
+exit 1
