@@ -3,13 +3,13 @@ set -e
 
 usage() {
 	echo "degit-sync - push and pull changes from local git repos to remote machines without git"
-	echo "Usage: $0 [-n] push <target>" 1>&2
-	echo "       $0 [-n] pull <target>" 1>&2
+	echo "Usage: $0 [-n] [-c] push <target>" 1>&2
+	echo "       $0 [-n] [-c] pull <target>" 1>&2
 }
 
 
 # CLI parsing
-while getopts ":nh" opt; do
+while getopts ":nch" opt; do
 	case $opt in
 		h)
 			usage
@@ -17,11 +17,15 @@ while getopts ":nh" opt; do
 			echo -e "\t <target> \t the remote location to sync with"
 			echo -e "\t -h \t\t print help"
 			echo -e "\t -n \t\t dry run"
+			echo -e "\t -c \t\t push commit details"
 			exit 0
+			;;
+		c)
+			commit_details=true
 			;;
 		n)
 			echo "dry run"
-			dryrun=" --dry-run"
+			dryrun="--dry-run"
 			;;
 		\?)
 			echo "Invalid option: -$OPTARG" >&2
@@ -54,6 +58,20 @@ if [ $command == "push" ]
 then
 	echo "Pushing repo under $repo_root to $target"
 	rsync -aP $repo_root/ "$target/" --exclude=".*" --exclude=/build/ --delete --stats $dryrun
+	if [[ "$commit_details" = true ]]
+	then
+		if [[ -z "$dryrun" ]]
+		then
+			tmpdir=$(mktemp -d)
+			mkdir $tmpdir/.degit-sync
+			git rev-parse --short HEAD > $tmpdir/.degit-sync/commit
+			git diff > $tmpdir/.degit-sync/diff
+			scp -r $tmpdir/.degit-sync "$target"
+			rm -rf "$tmpdir"
+		else
+			echo "Copy git details"
+		fi
+	fi
 	exit 0
 fi
 
