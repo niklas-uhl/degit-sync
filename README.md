@@ -24,6 +24,6 @@ Commit your changes in your local repository and wait until the next bug.
 
 # License
 
-This tool is licensed under MIT. See [LICENSE] for details.
+This tool is licensed under MIT. See [LICENSE](LICENSE) for details.
 
 Copyright 2022 Tim Niklas Uhl
